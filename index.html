@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[P研] 倉庫スケジュール</title>
+
+    <!-- ファビコン（タブに表示されるアイコン） -->
+    <!-- rel="icon" の PNG: Chrome / Firefox / Edge などモダンブラウザ向け -->
+    <!-- type="image/png" を明示することで Safari がファイルを正しく PNG と認識する -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icon.png">
+    <!-- rel="shortcut icon": Safari を含む旧来ブラウザが最優先で参照する形式 -->
+    <link rel="shortcut icon" type="image/png" href="icon.png">
+    <!-- Apple Touch Icon: iOS Safari でホーム画面に追加したときのアイコン（タブアイコンとは別） -->
+    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+    <!-- Android Chrome / PWA 向け: manifest.json でアイコンを指定 -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Windows タイル（Edge / IE）向けのアイコン色指定 -->
+    <meta name="msapplication-TileImage" content="icon.png">
+    <meta name="msapplication-TileColor" content="#6c63ff">
+    <!-- Android Chrome のアドレスバー・テーマカラー -->
+    <meta name="theme-color" content="#6c63ff">
+
+    <!-- React + ReactDOM (UMD) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel (JSX をブラウザで変換) -->
+    <script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+
+    <!-- Firebase (ESM → importmap 経由) -->
+    <script type="importmap">
+    {
+        "imports": {
+        "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js":      "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+        "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js": "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"
+        }
+    }
+    </script>
+
+    <link rel="stylesheet" href="style.css">
+    <style>
+        html, body, #root { height: 100%; margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module" data-presets="react" src="script.js"></script>
+</body>
+</html>
