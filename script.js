@@ -270,6 +270,8 @@ function App(){
     const [loginInput, setLoginInput] = useState("");         // ログインフォームの入力値
     const [loginErr, setLoginErr] = useState("");             // ログインエラーメッセージ
     const [weekOffset, setWeekOffset] = useState(0);          // 週ナビのオフセット
+    // 通常モード・管理者モードからタイムスケジュール作成画面へ切り替えるための状態
+    const [showTimeSchedule, setShowTimeSchedule] = useState(false);
 
     // パスワード変更モーダル関連の状態
     const [showPassChange, setShowPassChange] = useState(false);
@@ -1349,6 +1351,16 @@ function App(){
     // 追加フォームに強制追加可能な行が1件以上あるか
     const hasForceRows = rows.some(r => r.warn && r.forceOk);
 
+    // 専用画面を開いた場合は、元の通常／管理者状態を維持したまま別コンポーネントを表示する
+    if (showTimeSchedule && window.TimeSchedulePage) {
+        const TimeSchedulePage = window.TimeSchedulePage;
+        return <TimeSchedulePage
+            db={db}
+            onBack={() => setShowTimeSchedule(false)}
+            returnLabel={isAdmin ? "管理者モードに戻る" : "通常画面に戻る"}
+        />;
+    }
+
     return(
         // 管理者モードに応じてページ背景グラデーションを切り替える
         <div style = {{minHeight:"100vh", background:isAdmin?"linear-gradient(160deg,#fffbeb 0%,#fef3c7 40%,#fff7ed 100%)":"linear-gradient(160deg,#f8f9ff 0%,#eef2ff 50%,#fdf0ff 100%)", fontFamily:"'M PLUS Rounded 1c','Noto Sans JP',sans-serif", transition:"background 0.4s"}}>
@@ -1400,6 +1412,8 @@ function App(){
                 <button className = {"btn btn-sm " + (isAdmin?"btn-ghost-amber":"btn-ghost")} onClick={handleCapture} disabled = {capturing}>{capturing?"保存中...":"画像保存"}</button>
                 {/* 予定追加フォームを開くボタン */}
                 <button className = {"btn btn-sm " + (isAdmin?"btn-amber":"btn-purple")} onClick = {openAdd}>+ 予定を追加</button>
+                {/* 全利用者が共同編集できるタイムスケジュール作成画面へ移動する */}
+                <button className = {"btn btn-sm " + (isAdmin?"btn-ghost-amber":"btn-ghost")} onClick = {() => setShowTimeSchedule(true)}>タイムスケジュール作成</button>
                 {isAdmin?<>
                 <button className = "btn btn-sm btn-ghost-amber" onClick = {() => openEventModal(dateKey(weekDates[0]))}>イベント設定</button>
                 {/* 管理者専用：JSONから予定を一括追加するボタン */}

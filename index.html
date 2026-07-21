@@ -40,6 +40,9 @@
     </script>
 
     <link rel="stylesheet" href="style.css">
+
+    <!-- タイムスケジュール表をPNG画像として保存するためのライブラリ -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         html, body, #root { height: 100%; margin: 0; padding: 0; }
     </style>
@@ -47,6 +50,8 @@
 <body>
     <div id="root"></div>
 
+    <!-- タイムスケジュール作成画面は別JSファイルとして読み込む -->
+    <script type="text/babel" data-type="module" data-presets="react" src="timeschedule.js"></script>
     <script type="text/babel" data-type="module" data-presets="react" src="script.js"></script>
 </body>
 </html>
