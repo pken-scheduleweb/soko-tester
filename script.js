@@ -1389,6 +1389,16 @@ function App(){
                 <div style = {{display:"flex", alignItems:"center", gap:7, flexWrap:"wrap"}}>
                     <h1 style = {{fontSize:20, fontWeight:800, color:"#2d2d3a", letterSpacing:"-0.4px"}}>[P研] 倉庫スケジュール</h1>
                     {isAdmin && <span className="adm-b">管理者モード</span>}
+                    {/* 管理者モードでは横スクロールの影響を受けないタイトル横にもボタンを表示する */}
+                    {isAdmin && (
+                        <button
+                            className = "btn btn-sm btn-amber"
+                            onClick = {() => setShowTimeSchedule(true)}
+                            style = {{padding:"6px 12px"}}
+                        >
+                            タイムスケジュール作成
+                        </button>
+                    )}
                 </div>
                 {/* 表示中の週範囲を表示 */}
                 <p style = {{fontSize:11, color:"#9ca3af", marginTop:1, fontWeight:500}}>
@@ -1412,8 +1422,12 @@ function App(){
                 <button className = {"btn btn-sm " + (isAdmin?"btn-ghost-amber":"btn-ghost")} onClick={handleCapture} disabled = {capturing}>{capturing?"保存中...":"画像保存"}</button>
                 {/* 予定追加フォームを開くボタン */}
                 <button className = {"btn btn-sm " + (isAdmin?"btn-amber":"btn-purple")} onClick = {openAdd}>+ 予定を追加</button>
-                {/* 全利用者が共同編集できるタイムスケジュール作成画面へ移動する */}
-                <button className = {"btn btn-sm " + (isAdmin?"btn-ghost-amber":"btn-ghost")} onClick = {() => setShowTimeSchedule(true)}>タイムスケジュール作成</button>
+                {/* 通常モードでは操作ボタン列からタイムスケジュール作成画面へ移動する */}
+                {!isAdmin && (
+                    <button className = "btn btn-sm btn-ghost" onClick = {() => setShowTimeSchedule(true)}>
+                        タイムスケジュール作成
+                    </button>
+                )}
                 {isAdmin?<>
                 <button className = "btn btn-sm btn-ghost-amber" onClick = {() => openEventModal(dateKey(weekDates[0]))}>イベント設定</button>
                 {/* 管理者専用：JSONから予定を一括追加するボタン */}
