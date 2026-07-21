@@ -21,7 +21,8 @@ function emptyPerformerForm() {
         name: "",
         songs: "",
         duration: "",
-        rehearsal: true,
+        // 「リハ込み」は必要な出演者だけが選ぶため、初期状態ではチェックしない
+        rehearsalIncluded: false,
     };
 }
 
@@ -66,7 +67,9 @@ function normalizeTimetable(raw) {
             name: String(item.name || ""),
             songs: Math.max(0, Number(item.songs) || 0),
             duration: Math.max(1, Number(item.duration) || Math.max(1, (Number(item.songs) || 1) * 5)),
-            rehearsal: item.rehearsal !== false,
+            // 旧データの rehearsal は「リハーサルを行うか」を表していたため引き継がず、
+            // 新しい rehearsalIncluded が明示的に true の場合だけ「リハ込み」として扱う
+            rehearsalIncluded: item.rehearsalIncluded === true,
         }))
         : [];
 
@@ -213,6 +216,10 @@ function ensureTimeScheduleStyles() {
             display: inline-flex; align-items: center; padding: 3px 8px; margin-left: 7px;
             border-radius: 999px; background: #f59e0b; color: #fff; font-size: 9px; font-weight: 800;
         }
+        .lts-rehearsal-included-badge {
+            display: inline-flex; align-items: center; padding: 3px 8px; margin-left: 7px;
+            border-radius: 999px; background: #10b981; color: #fff; font-size: 9px; font-weight: 800;
+        }
         .lts-updated { margin-top: 13px; text-align: right; color: #b0b0be; font-size: 10px; }
         /* PNG保存中は編集・削除ボタンを隠し、表として自然な幅に整える */
         .lts-board.is-capturing .lts-block-actions { display: none; }
@@ -310,25 +317,29 @@ function TimeSchedulePage({ db, onBack, returnLabel = "管理者モードに戻�
     }
 
     // 本番の開始時刻から、各出演者の開始・終了時刻を順番に計算する
+    // 「リハ込み」の出演者は、本番側の使用時間へ15分を加算する
     const performanceRows = useMemo(() => {
         let cursor = timeToMinutes(timetable.performanceStart);
         return timetable.performers.map((performer, index) => {
             const start = cursor;
-            const end = start + performer.duration;
+            const effectiveDuration = performer.duration + (performer.rehearsalIncluded ? 15 : 0);
+            const end = start + effectiveDuration;
             cursor = end;
-            return { performer, index, start, end };
+            return { performer, index, start, end, effectiveDuration };
         });
     }, [timetable.performanceStart, timetable.performers]);
 
-    // リハーサル対象者だけを抽出し、本番とは逆順に並べる
+    // 「リハ込み」ではない出演者は全員リハーサルを行い、本番とは逆順に並べる
+    // 「リハ込み」の出演者は本番枠内でリハーサルを行うため、こちらには表示しない
     const rehearsalOrder = useMemo(() => {
-        return timetable.performers.filter(item => item.rehearsal).slice().reverse();
+        return timetable.performers.filter(item => !item.rehearsalIncluded).slice().reverse();
     }, [timetable.performers]);
 
-    // 本番開始時刻から逆算し、リハーサルが本番開始直前に終わるよう15分刻みで計算する
+    // 本番開始30分前をリハーサル終了時刻として、そこから15分刻みで逆算する
     const rehearsalRows = useMemo(() => {
         const performanceStartMinutes = timeToMinutes(timetable.performanceStart);
-        let cursor = performanceStartMinutes - rehearsalOrder.length * 15;
+        const rehearsalEndMinutes = performanceStartMinutes - 30;
+        let cursor = rehearsalEndMinutes - rehearsalOrder.length * 15;
         return rehearsalOrder.map((performer, index) => {
             const start = cursor;
             const end = start + 15;
@@ -362,14 +373,14 @@ function TimeSchedulePage({ db, onBack, returnLabel = "管理者モードに戻�
         if (editingId) {
             // 編集中の出演者だけを置き換える
             nextPerformers = timetable.performers.map(item => item.id === editingId
-                ? { ...item, name, songs, duration, rehearsal: Boolean(form.rehearsal) }
+                ? { ...item, name, songs, duration, rehearsalIncluded: Boolean(form.rehearsalIncluded) }
                 : item
             );
         } else {
             // 新規出演者は本番順の末尾へ追加する
             nextPerformers = [
                 ...timetable.performers,
-                { id: makeId(), name, songs, duration, rehearsal: Boolean(form.rehearsal) },
+                { id: makeId(), name, songs, duration, rehearsalIncluded: Boolean(form.rehearsalIncluded) },
             ];
         }
 
@@ -385,7 +396,7 @@ function TimeSchedulePage({ db, onBack, returnLabel = "管理者モードに戻�
             name: performer.name,
             songs: String(performer.songs),
             duration: String(performer.duration),
-            rehearsal: performer.rehearsal,
+            rehearsalIncluded: performer.rehearsalIncluded,
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -445,8 +456,8 @@ function TimeSchedulePage({ db, onBack, returnLabel = "管理者モードに戻�
         const replacementPerformanceOrder = [...movedRehearsalOrder].reverse();
         let replacementIndex = 0;
         const nextPerformers = timetable.performers.map(item => {
-            // リハーサルなしの出演者は現在位置を維持する
-            if (!item.rehearsal) return item;
+            // 「リハ込み」の出演者はリハーサル側に存在しないため、現在位置を維持する
+            if (item.rehearsalIncluded) return item;
             return replacementPerformanceOrder[replacementIndex++];
         });
 
@@ -537,11 +548,16 @@ function TimeSchedulePage({ db, onBack, returnLabel = "管理者モードに戻�
                 <div style={{ minWidth: 0 }}>
                     <div className="lts-name">
                         {performer.name}
+                        {isPerformance && performer.rehearsalIncluded && (
+                            <span className="lts-rehearsal-included-badge">リハ込み</span>
+                        )}
                         {isFinalAct && <span className="lts-live-badge">トリ</span>}
                     </div>
                     <div className="lts-meta">
                         {isPerformance
-                            ? `${performer.songs}曲・${performer.duration}分${performer.rehearsal ? "・リハあり" : "・リハなし"}`
+                            ? performer.rehearsalIncluded
+                                ? `${performer.songs}曲・本番${performer.duration}分＋リハ15分（計${row.effectiveDuration}分）`
+                                : `${performer.songs}曲・${performer.duration}分`
                             : "リハーサル 15分"
                         }
                     </div>
@@ -644,10 +660,10 @@ function TimeSchedulePage({ db, onBack, returnLabel = "管理者モードに戻�
                             <label className="lts-checkbox-row">
                                 <input
                                     type="checkbox"
-                                    checked={form.rehearsal}
-                                    onChange={event => setForm(current => ({ ...current, rehearsal: event.target.checked }))}
+                                    checked={form.rehearsalIncluded}
+                                    onChange={event => setForm(current => ({ ...current, rehearsalIncluded: event.target.checked }))}
                                 />
-                                リハーサル込み
+                                リハ込み（本番枠に15分追加）
                             </label>
                             <div style={{ display: "flex", gap: 6 }}>
                                 <button className="lts-btn lts-btn-main" type="submit">
@@ -660,7 +676,8 @@ function TimeSchedulePage({ db, onBack, returnLabel = "管理者モードに戻�
                         </div>
                     </form>
                     <div className="lts-help">
-                        使用時間を空欄にすると「曲数 × 5分」を自動設定します。リハーサルは対象者のみ表示され、使用時間は一律15分です。
+                        使用時間を空欄にすると「曲数 × 5分」を自動設定します。通常は全出演者に15分のリハーサル枠を作成し、
+                        本番開始30分前までに終了するよう逆算します。「リハ込み」を選ぶとリハーサル側には表示せず、本番枠へ15分を追加します。
                         ブロックをドラッグすると、本番とリハーサルの逆順関係を保ったまま両方が更新されます。
                     </div>
                     {timetable.performers.length > 0 && (
@@ -674,7 +691,7 @@ function TimeSchedulePage({ db, onBack, returnLabel = "管理者モードに戻�
                     <div className="lts-board-head">
                         <div>
                             <div className="lts-board-title">{timetable.title || DEFAULT_TIMETABLE.title}</div>
-                            <div className="lts-subtitle">本番順とリハーサル順は自動的に逆順で連動します</div>
+                            <div className="lts-subtitle">本番順とリハーサル順は逆順で連動し、リハは本番開始30分前までに終了します</div>
                         </div>
                         <div className="lts-start-label">本番開始 {timetable.performanceStart}</div>
                     </div>
@@ -686,12 +703,16 @@ function TimeSchedulePage({ db, onBack, returnLabel = "管理者モードに戻�
                             <section className="lts-column rehearsal">
                                 <div className="lts-column-title">
                                     <span>リハーサル</span>
-                                    <span className="lts-column-note">本番と逆順・各15分</span>
+                                    <span className="lts-column-note">本番と逆順・各15分・30分前終了</span>
                                 </div>
                                 <div className="lts-list">
                                     {rehearsalRows.length > 0
                                         ? rehearsalRows.map(row => renderBlock(row, "rehearsal"))
-                                        : <div className="lts-empty">リハーサル込みの出演者を追加してください</div>
+                                        : <div className="lts-empty">
+                                            {timetable.performers.length > 0
+                                                ? "全出演者が「リハ込み」のため、個別リハーサル枠はありません"
+                                                : "出演者を追加すると、リハーサル枠が自動で作成されます"}
+                                        </div>
                                     }
                                 </div>
                             </section>

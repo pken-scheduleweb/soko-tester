@@ -270,7 +270,7 @@ function App(){
     const [loginInput, setLoginInput] = useState("");         // ログインフォームの入力値
     const [loginErr, setLoginErr] = useState("");             // ログインエラーメッセージ
     const [weekOffset, setWeekOffset] = useState(0);          // 週ナビのオフセット
-    // 通常モード・管理者モードからタイムスケジュール作成画面へ切り替えるための状態
+    // 管理者モードからタイムスケジュール作成画面へ切り替えるための状態
     const [showTimeSchedule, setShowTimeSchedule] = useState(false);
 
     // パスワード変更モーダル関連の状態
@@ -1351,13 +1351,13 @@ function App(){
     // 追加フォームに強制追加可能な行が1件以上あるか
     const hasForceRows = rows.some(r => r.warn && r.forceOk);
 
-    // 専用画面を開いた場合は、元の通常／管理者状態を維持したまま別コンポーネントを表示する
+    // 管理者モードで専用画面を開いた場合は、別コンポーネントを表示する
     if (showTimeSchedule && window.TimeSchedulePage) {
         const TimeSchedulePage = window.TimeSchedulePage;
         return <TimeSchedulePage
             db={db}
             onBack={() => setShowTimeSchedule(false)}
-            returnLabel={isAdmin ? "管理者モードに戻る" : "通常画面に戻る"}
+            returnLabel="管理者モードに戻る"
         />;
     }
 
@@ -1389,16 +1389,6 @@ function App(){
                 <div style = {{display:"flex", alignItems:"center", gap:7, flexWrap:"wrap"}}>
                     <h1 style = {{fontSize:20, fontWeight:800, color:"#2d2d3a", letterSpacing:"-0.4px"}}>[P研] 倉庫スケジュール</h1>
                     {isAdmin && <span className="adm-b">管理者モード</span>}
-                    {/* 管理者モードでは横スクロールの影響を受けないタイトル横にもボタンを表示する */}
-                    {isAdmin && (
-                        <button
-                            className = "btn btn-sm btn-amber"
-                            onClick = {() => setShowTimeSchedule(true)}
-                            style = {{padding:"6px 12px"}}
-                        >
-                            タイムスケジュール作成
-                        </button>
-                    )}
                 </div>
                 {/* 表示中の週範囲を表示 */}
                 <p style = {{fontSize:11, color:"#9ca3af", marginTop:1, fontWeight:500}}>
@@ -1422,13 +1412,9 @@ function App(){
                 <button className = {"btn btn-sm " + (isAdmin?"btn-ghost-amber":"btn-ghost")} onClick={handleCapture} disabled = {capturing}>{capturing?"保存中...":"画像保存"}</button>
                 {/* 予定追加フォームを開くボタン */}
                 <button className = {"btn btn-sm " + (isAdmin?"btn-amber":"btn-purple")} onClick = {openAdd}>+ 予定を追加</button>
-                {/* 通常モードでは操作ボタン列からタイムスケジュール作成画面へ移動する */}
-                {!isAdmin && (
-                    <button className = "btn btn-sm btn-ghost" onClick = {() => setShowTimeSchedule(true)}>
-                        タイムスケジュール作成
-                    </button>
-                )}
                 {isAdmin?<>
+                {/* 管理者モードでのみ、共同編集用のタイムスケジュール作成画面へ移動できる */}
+                <button className = "btn btn-sm btn-ghost-amber" onClick = {() => setShowTimeSchedule(true)}>タイテ作成</button>
                 <button className = "btn btn-sm btn-ghost-amber" onClick = {() => openEventModal(dateKey(weekDates[0]))}>イベント設定</button>
                 {/* 管理者専用：JSONから予定を一括追加するボタン */}
                 <button className = "btn btn-sm btn-ghost-amber" onClick = {() => { setShowJsonImport(true); setJsonInput(""); setJsonError(""); }}>JSONから追加</button>
